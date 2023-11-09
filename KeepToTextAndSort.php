@@ -1,7 +1,8 @@
 <?
 
-const DIRNAME_WITH_GOOGLE_KEEP_NOTES = __DIR__ . '\Takeout\Google Keep';
-function getZipArchiveFilename(): string|Exception
+const DIRNAME_WITH_GOOGLE_KEEP_NOTES = __DIR__ . '/Takeout/Google Keep';
+
+function getZipArchiveFilename()
 {
     $isFileFound = false;
 
@@ -17,7 +18,7 @@ function getZipArchiveFilename(): string|Exception
     }
 }
 
-function unzipArchive()
+function unzipArchive(): void
 {
     $zip = new ZipArchive();
     if ($zip->open(getZipArchiveFilename()) === true) {
@@ -27,7 +28,7 @@ function unzipArchive()
     }
 }
 
-function getNameWithoutProhibitedCharacters($name)
+function getNameWithoutProhibitedCharacters($name): array|string
 {
     $nameWithoutProhibitedCharacters = trim($name);
     if (str_contains($name, '\\')) {
@@ -60,11 +61,11 @@ function getNameWithoutProhibitedCharacters($name)
     return $nameWithoutProhibitedCharacters;
 }
 
-function writeNoteToTextFile($label, $title, $content)
+function writeNoteToTextFile($label, $title, $content): bool
 {
     if (
         file_put_contents(
-            __DIR__ . '\\SortedNotes\\' . $label . '\\' . $title . '.txt',
+            __DIR__ . '/SortedNotes/' . $label . '/' . $title . '.txt',
             $content
         ) !== false
     ) {
@@ -95,19 +96,19 @@ unzipArchive();
 
 if (mkdir('SortedNotes')) {
     $filesWithNotes = scandir(DIRNAME_WITH_GOOGLE_KEEP_NOTES);
-
     foreach ($filesWithNotes as $htmlOrJsonFilename) {
         if (preg_match('/\\.json$/', $htmlOrJsonFilename)) {
-            $note = json_decode(file_get_contents(__DIR__ . '\Takeout\Google Keep\\' . $htmlOrJsonFilename), true);
+            $note = json_decode(file_get_contents(__DIR__ . '/Takeout/Google Keep/' . $htmlOrJsonFilename), true);
+            file_put_contents(__DIR__.'/dump.txt', print_r($note, true));
             if (isset($note['labels'])) {
                 foreach ($note['labels'] as $label) {
                     $labelWithoutProhibitedCharacters = getNameWithoutProhibitedCharacters($label['name']);
-                    if (file_exists('SortedNotes\\' . $labelWithoutProhibitedCharacters) and is_dir('SortedNotes\\' . $labelWithoutProhibitedCharacters)) {
+                    if (file_exists('SortedNotes/' . $labelWithoutProhibitedCharacters) and is_dir('SortedNotes/' . $labelWithoutProhibitedCharacters)) {
                         $titleWithoutProhibitedCharacters = getNameWithoutProhibitedCharacters($note['title']);
                         if (!writeNoteToTextFile($labelWithoutProhibitedCharacters, $titleWithoutProhibitedCharacters, $note['textContent'])) {
                             throw new Exception('failed to write file ' . $titleWithoutProhibitedCharacters . '.txt');
                         }
-                    } elseif (mkdir('SortedNotes\\' . $labelWithoutProhibitedCharacters)) {
+                    } elseif (mkdir('SortedNotes/' . $labelWithoutProhibitedCharacters)) {
                         $titleWithoutProhibitedCharacters = getNameWithoutProhibitedCharacters($note['title']);
                         if (!writeNoteToTextFile($labelWithoutProhibitedCharacters, $titleWithoutProhibitedCharacters, $note['textContent'])) {
                             throw new Exception('failed to write file ' . $titleWithoutProhibitedCharacters . '.txt');
@@ -116,18 +117,18 @@ if (mkdir('SortedNotes')) {
                         throw new Exception('failed to create folder ' . $labelWithoutProhibitedCharacters);
                     }
                 }
-            } elseif (file_exists('SortedNotes\\' . 'NotesWithoutLabel') and is_dir('SortedNotes\\' . 'NotesWithoutLabel')) {
+            } elseif (file_exists('SortedNotes/' . 'NotesWithoutLabel') and is_dir('SortedNotes/' . 'NotesWithoutLabel')) {
                 $titleWithoutProhibitedCharacters = getNameWithoutProhibitedCharacters($note['title']);
                 if (!writeNoteToTextFile('NotesWithoutLabel', $titleWithoutProhibitedCharacters, $note['textContent'])) {
                     throw new Exception('failed to write file ' . $titleWithoutProhibitedCharacters . '.txt');
                 }
-            } elseif (mkdir('SortedNotes\\' . 'NotesWithoutLabel')) {
+            } elseif (mkdir('SortedNotes/' . 'NotesWithoutLabel')) {
                 $titleWithoutProhibitedCharacters = getNameWithoutProhibitedCharacters($note['title']);
                 if (!writeNoteToTextFile('NotesWithoutLabel', $titleWithoutProhibitedCharacters, $note['textContent'])) {
                     throw new Exception('failed to write file ' . $titleWithoutProhibitedCharacters . '.txt');
                 }
             } else {
-                throw new Exception('failed to create folder SortedNotes\\NotesWithoutLabel');
+                throw new Exception('failed to create folder SortedNotes/NotesWithoutLabel');
             }
         }
     }
